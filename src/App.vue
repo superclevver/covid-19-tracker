@@ -28,6 +28,18 @@
       </div>
     </div>
     <div class="centerTables">
+      <div class="buttons">
+        <div class="buttonGroup">
+          <v-select
+            class="style-chooser"
+            placeholder="Select Country..."
+            v-model="country"
+            label="name"
+            :options="regions"
+          ></v-select>
+          <div class="button"><font-awesome-icon icon="search" />Search</div>
+        </div>
+      </div>
       <div class="tables">
         <div class="titleAndTable">
           <div class="title">Countries</div>
@@ -44,20 +56,27 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(country, index) in regions" :key="country.iso">
+                <tr
+                  v-for="(region, index) in reportsByRegion"
+                  :key="region.iso"
+                >
                   <td>{{ index }}</td>
-                  <td>{{ country.name }}</td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
+                  <td>{{ region.name }}</td>
+                  <td v-if="region.confirmed">{{ region.confirmed }}</td>
+                  <td v-else>-</td>
+                  <td v-if="region.deaths">{{ region.deaths }}</td>
+                  <td v-else>-</td>
+                  <td v-if="region.recovered">{{ region.recovered }}</td>
+                  <td v-else>-</td>
+                  <td v-if="region.active">{{ region.active }}</td>
+                  <td v-else>-</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
         <div class="titleAndTable">
-          <div class="title">Country name</div>
+          <div class="title">{{ country.name }}</div>
           <div class="globalTableWrapper">
             <table>
               <thead>
@@ -89,46 +108,96 @@
 </template>
 
 <script>
+import vSelect from "vue-select";
+import "vue-select/dist/vue-select.css";
+
 export default {
   name: "App",
+  components: {
+    "v-select": vSelect,
+  },
   data() {
     return {
       globalData: {
-        date: "loading",
-        last_update: "loading",
-        confirmed: "loading",
-        confirmed_diff: "loading",
-        deaths: "loading",
-        deaths_diff: "loading",
-        recovered: "loading",
-        recovered_diff: "loading",
-        active: "loading",
-        active_diff: "loading",
-        fatality_rate: "loading",
+        date: "Loading...",
+        last_update: "Loading...",
+        confirmed: "Loading...",
+        confirmed_diff: "Loading...",
+        deaths: "Loading...",
+        deaths_diff: "Loading...",
+        recovered: "Loading...",
+        recovered_diff: "Loading...",
+        active: "Loading...",
+        active_diff: "Loading...",
+        fatality_rate: "Loading...",
       },
       regions: [],
+      reports: [],
+      reportsByRegion: [],
+      country: {
+        iso: "",
+        name: "",
+      },
     };
   },
   async created() {
     this.getTotalData();
     await this.getRegions();
+    await this.getReports();
+    await this.getReportsByRegion();
   },
   methods: {
-    getTotalData: function () {
+    getTotalData() {
       fetch("https://covid-api.com/api/reports/total")
         .then((response) => response.json())
         .then((json) => {
           this.globalData = json.data;
-          console.log(this.globalData);
+          // console.log(this.globalData);
         });
     },
-    getRegions: async function () {
-      fetch("https://covid-api.com/api/regions")
+    async getRegions() {
+      return fetch("https://covid-api.com/api/regions")
         .then((response) => response.json())
         .then((json) => {
           this.regions = json.data;
-          console.log(this.regions);
+          this.regions = this.regions.sort((a, b) =>
+            a.name.localeCompare(b.name)
+          );
+          // console.log(this.regions);
         });
+    },
+    async getReports() {
+      return fetch("https://covid-api.com/api/reports")
+        .then((response) => response.json())
+        .then((json) => {
+          this.reports = json.data;
+        });
+    },
+    async getReportsByRegion() {
+      for (let index = 0; index < this.regions.length; index++) {
+        const reportByRegion = {
+          iso: "",
+          name: "",
+          confirmed: 0,
+          deaths: 0,
+          recovered: 0,
+          active: 0,
+        };
+        const region = this.regions[index];
+        reportByRegion.iso = region.iso;
+        reportByRegion.name = region.name;
+
+        for (let j = 0; j < this.reports.length; j++) {
+          const report = this.reports[j];
+          if (report.region.iso === region.iso) {
+            reportByRegion.confirmed += report.confirmed;
+            reportByRegion.deaths += report.deaths;
+            reportByRegion.recovered += report.recovered;
+            reportByRegion.active += report.active;
+          }
+        }
+        this.reportsByRegion.push(reportByRegion);
+      }
     },
   },
 };
@@ -138,15 +207,15 @@ export default {
 @import url("https://fonts.googleapis.com/css2?family=Fira+Code&family=IBM+Plex+Mono&family=Inconsolata&family=Roboto+Mono&family=Source+Code+Pro&display=swap");
 
 :root {
-  --bg-color: #262727;
-  --main-color: #f0d3c9;
-  --caret-color: #f0d3c9;
-  --sub-color: #665957;
-  --text-color: #fff;
-  --error-color: #bd4141;
-  --error-extra-color: #883434;
-  --colorful-error-color: #bd4141;
-  --colorful-error-extra-color: #883434;
+  --bg-color: #262a33;
+  --main-color: #43ffaf;
+  --caret-color: #43ffaf;
+  --sub-color: #526777;
+  --text-color: #e5f7ef;
+  --error-color: #ff5f5f;
+  --error-extra-color: #d22a2a;
+  --colorful-error-color: #ff5f5f;
+  --colorful-error-extra-color: #d22a2a;
   --font: "Roboto Mono";
 }
 
@@ -198,6 +267,33 @@ body {
   font-size: 2rem;
 }
 
+.centerTables {
+  border-radius: 0.25rem;
+  padding: 2rem;
+  display: grid;
+  gap: 2rem;
+  grid-template-rows: 3rem auto;
+  grid-template-areas:
+    "title buttons"
+    "tables tables";
+  grid-template-columns: 1fr 1fr;
+}
+
+.centerTables .buttons {
+  grid-area: buttons;
+  display: -ms-grid;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+  align-self: center;
+}
+
+.centerTables .buttons .buttonGroup {
+  display: grid;
+  gap: 1rem;
+  grid-area: 1/2;
+}
+
 .tables {
   grid-area: tables;
   display: grid;
@@ -213,6 +309,9 @@ body {
 
 .tables .titleAndTable .title {
   grid-area: 1/1;
+  font-size: 2rem;
+  line-height: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .tables .globalTableWrapper {
@@ -231,7 +330,80 @@ table thead {
   font-size: 0.75rem;
 }
 
+table tbody {
+  color: var(--text-color);
+}
+
 table tbody tr:nth-child(odd) td {
   background: rgba(0, 0, 0, 0.1);
+}
+
+.style-chooser {
+  height: 100%;
+  width: 100%;
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.style-chooser .vs__search::placeholder {
+  color: var(--sub-color);
+  font-family: var(--font);
+}
+
+.style-chooser .vs__selected {
+  color: var(--text-color);
+}
+
+.style-chooser .vs__dropdown-menu {
+  border: none;
+  background-color: var(--bg-color);
+}
+
+.style-chooser .vs__dropdown-menu li {
+  color: var(--sub-color);
+}
+
+.style-chooser .v-list-item--link::before {
+  background-color: red;
+}
+
+.style-chooser .vs__dropdown-menu .vs__dropdown-option--selected {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--text-color);
+}
+
+.style-chooser .vs__clear,
+.style-chooser .vs__open-indicator {
+  fill: var(--sub-color);
+}
+
+.style-chooser .vs__clear:hover,
+.style-chooser .vs__open-indicator:hover {
+  fill: var(--main-color);
+}
+
+.button {
+  color: var(--text-color);
+  cursor: pointer;
+  transition: 0.25s;
+  padding: 0.4rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.3);
+  text-align: center;
+  -webkit-user-select: none;
+  align-content: center;
+  height: min-content;
+  height: -moz-min-content;
+  line-height: 1rem;
+  transition: 0.65s ease-in-out;
+}
+
+.button svg {
+  margin-right: 0.5rem;
+}
+
+.button:hover {
+  background: var(--main-color);
+  color: var(--bg-color);
 }
 </style>
