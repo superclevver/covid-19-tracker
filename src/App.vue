@@ -32,23 +32,23 @@
         <div class="buttonGroup">
           <v-select
             class="style-chooser"
-            placeholder="Select Country..."
-            v-model="country"
+            v-model="regionSelected"
             label="name"
             :options="regions"
+            @input="getReportsByRegion"
           ></v-select>
-          <div class="button"><font-awesome-icon icon="search" />Search</div>
+          <!-- <div class="button" @click="getReportsByRegion"><font-awesome-icon icon="search"/>Search</div> -->
         </div>
       </div>
       <div class="tables">
         <div class="titleAndTable">
-          <div class="title">Countries</div>
+          <div class="title">Regions</div>
           <div class="globalTableWrapper">
             <table>
               <thead>
                 <tr>
                   <td>#</td>
-                  <td>Country</td>
+                  <td>Region</td>
                   <td>Confirmed cases</td>
                   <td>Deaths</td>
                   <td>Recovered cases</td>
@@ -57,7 +57,7 @@
               </thead>
               <tbody>
                 <tr
-                  v-for="(region, index) in reportsByRegion"
+                  v-for="(region, index) in reportsByRegions"
                   :key="region.iso"
                 >
                   <td>{{ index }}</td>
@@ -76,13 +76,13 @@
           </div>
         </div>
         <div class="titleAndTable">
-          <div class="title">{{ country.name }}</div>
+          <div class="title">{{ regionSelected.name }}</div>
           <div class="globalTableWrapper">
             <table>
               <thead>
                 <tr>
                   <td>#</td>
-                  <td>Province</td>
+                  <td>Subregion</td>
                   <td>Confirmed cases</td>
                   <td>Deaths</td>
                   <td>Recovered cases</td>
@@ -90,13 +90,17 @@
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>0</td>
-                  <td>Province name</td>
-                  <td>000000</td>
-                  <td>000000</td>
-                  <td>000000</td>
-                  <td>000000</td>
+                <tr 
+                  v-for="(reportByRegion, index) in reportsByRegion"
+                  :key="reportByRegion.region.iso + reportByRegion.region.name"
+                >
+                  <td>{{index}}</td>
+                  <td v-if="reportByRegion.region.province">{{reportByRegion.region.province}}</td>
+                  <td v-else>{{reportByRegion.region.name}}</td>
+                  <td>{{reportByRegion.confirmed}}</td>
+                  <td>{{reportByRegion.deaths}}</td>
+                  <td>{{reportByRegion.recovered}}</td>
+                  <td>{{reportByRegion.active}}</td>
                 </tr>
               </tbody>
             </table>
@@ -133,18 +137,19 @@ export default {
       },
       regions: [],
       reports: [],
-      reportsByRegion: [],
-      country: {
+      reportsByRegions: [],
+      regionSelected: {
         iso: "",
-        name: "",
+        name: "Select a region",
       },
+      reportsByRegion: [],
     };
   },
   async created() {
     this.getTotalData();
     await this.getRegions();
     await this.getReports();
-    await this.getReportsByRegion();
+    await this.getReportsByRegions();
   },
   methods: {
     getTotalData() {
@@ -173,7 +178,7 @@ export default {
           this.reports = json.data;
         });
     },
-    async getReportsByRegion() {
+    async getReportsByRegions() {
       for (let index = 0; index < this.regions.length; index++) {
         const reportByRegion = {
           iso: "",
@@ -196,9 +201,20 @@ export default {
             reportByRegion.active += report.active;
           }
         }
-        this.reportsByRegion.push(reportByRegion);
+        this.reportsByRegions.push(reportByRegion);
       }
     },
+    async getReportsByRegion() {
+      if (this.regionSelected.name !== 'Select a region') {
+        this.reportsByRegion = [];
+        for (let index = 0; index < this.reports.length; index++) {
+          const report = this.reports[index];
+          if (this.regionSelected.iso === report.region.iso) {
+            this.reportsByRegion.push(report);
+          }
+        }
+      }
+    }
   },
 };
 </script>
