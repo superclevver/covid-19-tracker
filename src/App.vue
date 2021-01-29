@@ -3,27 +3,35 @@
     <div class="center_content">
       <div class="stats morestats">
         <div class="group testType">
-          <div class="top">Global Data</div>
-          <div class="bottom">{{ globalData.last_update }}</div>
+          <div class="top">Updated at</div>
+          <div class="bottom lastUpdated">{{ globalData.last_update }}</div>
         </div>
 
         <div class="group info">
           <div class="top">Confirmed cases</div>
-          <div class="bottom">{{ globalData.confirmed }}</div>
+          <div class="bottom">
+            {{ new Intl.NumberFormat().format(globalData.confirmed) }}
+          </div>
         </div>
 
         <div class="group raw">
           <div class="top">Deaths</div>
-          <div class="bottom">{{ globalData.deaths }}</div>
+          <div class="bottom">
+            {{ new Intl.NumberFormat().format(globalData.deaths) }}
+          </div>
         </div>
         <div class="group key">
           <div class="top">Recovered cases</div>
-          <div class="bottom">{{ globalData.recovered }}</div>
+          <div class="bottom">
+            {{ new Intl.NumberFormat().format(globalData.recovered) }}
+          </div>
         </div>
 
         <div class="group flat consistency">
           <div class="top">Active cases</div>
-          <div class="bottom">{{ globalData.active }}</div>
+          <div class="bottom">
+            {{ new Intl.NumberFormat().format(globalData.active) }}
+          </div>
         </div>
       </div>
     </div>
@@ -62,13 +70,21 @@
                 >
                   <td>{{ index }}</td>
                   <td>{{ region.name }}</td>
-                  <td v-if="region.confirmed">{{ region.confirmed }}</td>
+                  <td v-if="region.confirmed">
+                    {{ new Intl.NumberFormat().format(region.confirmed) }}
+                  </td>
                   <td v-else>-</td>
-                  <td v-if="region.deaths">{{ region.deaths }}</td>
+                  <td v-if="region.deaths">
+                    {{ new Intl.NumberFormat().format(region.deaths) }}
+                  </td>
                   <td v-else>-</td>
-                  <td v-if="region.recovered">{{ region.recovered }}</td>
+                  <td v-if="region.recovered">
+                    {{ new Intl.NumberFormat().format(region.recovered) }}
+                  </td>
                   <td v-else>-</td>
-                  <td v-if="region.active">{{ region.active }}</td>
+                  <td v-if="region.active">
+                    {{ new Intl.NumberFormat().format(region.active) }}
+                  </td>
                   <td v-else>-</td>
                 </tr>
               </tbody>
@@ -90,17 +106,19 @@
                 </tr>
               </thead>
               <tbody>
-                <tr 
+                <tr
                   v-for="(reportByRegion, index) in reportsByRegion"
                   :key="reportByRegion.region.iso + reportByRegion.region.name"
                 >
-                  <td>{{index}}</td>
-                  <td v-if="reportByRegion.region.province">{{reportByRegion.region.province}}</td>
-                  <td v-else>{{reportByRegion.region.name}}</td>
-                  <td>{{reportByRegion.confirmed}}</td>
-                  <td>{{reportByRegion.deaths}}</td>
-                  <td>{{reportByRegion.recovered}}</td>
-                  <td>{{reportByRegion.active}}</td>
+                  <td>{{ index }}</td>
+                  <td v-if="reportByRegion.region.province">
+                    {{ reportByRegion.region.province }}
+                  </td>
+                  <td v-else>{{ reportByRegion.region.name }}</td>
+                  <td>{{ reportByRegion.confirmed }}</td>
+                  <td>{{ reportByRegion.deaths }}</td>
+                  <td>{{ reportByRegion.recovered }}</td>
+                  <td>{{ reportByRegion.active }}</td>
                 </tr>
               </tbody>
             </table>
@@ -153,15 +171,14 @@ export default {
   },
   methods: {
     getTotalData() {
-      fetch("https://covid-api.com/api/reports/total")
+      fetch("https://cors-anywhere.herokuapp.com/https://covid-api.com/api/reports/total")
         .then((response) => response.json())
         .then((json) => {
           this.globalData = json.data;
-          // console.log(this.globalData);
         });
     },
     async getRegions() {
-      return fetch("https://covid-api.com/api/regions")
+      return fetch("https://cors-anywhere.herokuapp.com/https://covid-api.com/api/regions")
         .then((response) => response.json())
         .then((json) => {
           this.regions = json.data;
@@ -169,10 +186,10 @@ export default {
             a.name.localeCompare(b.name)
           );
           // console.log(this.regions);
-        });
+        }).catch((error) => console.log(`Error ${error}`));
     },
     async getReports() {
-      return fetch("https://covid-api.com/api/reports")
+      return fetch("https://cors-anywhere.herokuapp.com/https://covid-api.com/api/reports")
         .then((response) => response.json())
         .then((json) => {
           this.reports = json.data;
@@ -205,7 +222,7 @@ export default {
       }
     },
     async getReportsByRegion() {
-      if (this.regionSelected.name !== 'Select a region') {
+      if (this.regionSelected.name !== "Select a region") {
         this.reportsByRegion = [];
         for (let index = 0; index < this.reports.length; index++) {
           const report = this.reports[index];
@@ -214,7 +231,7 @@ export default {
           }
         }
       }
-    }
+    },
   },
 };
 </script>
@@ -283,11 +300,14 @@ body {
   font-size: 2rem;
 }
 
+.stats.morestats .group .bottom.lastUpdated {
+  font-size: 1rem;
+}
+
 .centerTables {
   border-radius: 0.25rem;
-  padding: 2rem;
+  padding: 1rem;
   display: grid;
-  gap: 2rem;
   grid-template-rows: 3rem auto;
   grid-template-areas:
     "title buttons"
@@ -344,6 +364,12 @@ table {
 table thead {
   color: var(--sub-color);
   font-size: 0.75rem;
+}
+
+table thead td {
+  background: var(--bg-color);
+  position: sticky;
+  top: 0;
 }
 
 table tbody {
